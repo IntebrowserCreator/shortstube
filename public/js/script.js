@@ -6,10 +6,12 @@ const videoObserver = new IntersectionObserver((entries) => {
         const video = entry.target;
         
         if (entry.isIntersecting) {
+            // Video is in focus -> play it
             video.play().catch(err => {
-                console.log("Autoplay interrupted: Waiting for a user interaction gesture to enable sound.", err);
+                console.log("Autoplay interrupted: Waiting for a user interaction gesture.", err);
             });
         } else {
+            // Video was scrolled past -> pause it and reset to beginning
             video.pause();
             video.currentTime = 0;
         }
@@ -36,18 +38,13 @@ function updateAuthUI() {
 
 async function handleAuth() {
     const username = document.getElementById('authUsername').value.trim();
-    const password = document.getElementById('authPassword').value;
-
-    if (!username || !password) {
-        alert("Please enter both a username and password.");
-        return;
-    }
+    if (!username) return;
 
     try {
         const response = await fetch('/api/auth', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password }) // Now sending the password to the backend
+            body: JSON.stringify({ username })
         });
         const data = await response.json();
 
@@ -56,15 +53,9 @@ async function handleAuth() {
             localStorage.setItem('tiktok_user', currentUser);
             updateAuthUI();
             closeModal('authModal');
-            
-            // Clear inputs for security
-            document.getElementById('authUsername').value = '';
-            document.getElementById('authPassword').value = '';
-            
             renderFeed(); 
             alert(`Welcome, @${currentUser}! You can now upload videos.`);
         } else {
-            // Displays errors like "Incorrect password"
             alert(data.error || 'Authentication failed');
         }
     } catch (err) {
@@ -126,7 +117,10 @@ async function renderFeed() {
             const vidElement = document.createElement('video');
             vidElement.src = video.url;
             vidElement.controls = true;
-            vidElement.muted = false; 
+            
+            // FIX: Start muted so browsers allow autoplay. 
+            // Users can unmute manually using the video player controls.
+            vidElement.muted = true; 
             vidElement.loop = true;
 
             vidElement.onplay = () => {
