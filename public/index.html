@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShortsTube | Scroll and upload videos</title>
+    <link rel="icon" href="images/favicon.png">
+    <style>
+        :root {
+            --bg-color: #010101;
+            --text-color: #ffffff;
+            --accent-color: #fe2c55;
+            --secondary-bg: #121212;
+            --card-bg: #2f2f2f;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        header {
+            width: 100%;
+            height: 60px;
+            background-color: var(--secondary-bg);
+            border-bottom: 1px solid #222;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            position: fixed;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            height: 100%;
+        }
+
+        .logo-img {
+            max-height: 40px; 
+            width: auto;      
+            object-fit: contain;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        button:hover { opacity: 0.9; }
+        .btn-primary { background-color: var(--accent-color); color: white; }
+        .btn-secondary { background-color: #333; color: white; }
+
+        main {
+            margin-top: 80px;
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-bottom: 40px;
+        }
+
+        .video-container {
+            width: 100%;
+            max-width: 400px;
+            height: 700px;
+            background-color: #000;
+            border-radius: 8px;
+            position: relative;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            scroll-snap-align: start;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .video-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 20px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            border-radius: 0 0 8px 8px;
+        }
+
+        .video-title { font-size: 16px; font-weight: bold; margin-bottom: 5px; }
+        .video-genre { 
+            display: inline-block;
+            background-color: rgba(255,255,255,0.2); 
+            padding: 3px 8px; 
+            border-radius: 12px; 
+            font-size: 12px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+        }
+
+        .modal-content {
+            background-color: var(--secondary-bg);
+            padding: 30px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 450px;
+            border: 1px solid #333;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .close-btn { font-size: 24px; cursor: pointer; }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #aaa;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            background-color: #222;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 4px;
+        }
+
+        .error-msg { color: var(--accent-color); font-size: 13px; margin-top: 5px; display: none; }
+        .hint { font-size: 11px; color: #888; margin-top: 2px; }
+
+        .algo-toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #333;
+            padding: 10px 15px;
+            border-radius: 4px;
+            font-size: 12px;
+            border-left: 4px solid var(--accent-color);
+            z-index: 99;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-container">
+            <img src="images/logo.png" alt="ShortsTube Logo" class="logo-img">
+        </div>
+        <div class="nav-buttons">
+            <button class="btn-secondary" id="openUploadBtn" onclick="openModal('uploadModal')">Upload</button>
+            <span id="userStatus" style="font-size: 14px; color: #aaa;"></span>
+            <button class="btn-primary" id="authBtn" onclick="openModal('authModal')">Login / Sign Up</button>
+        </div>
+    </header>
+
+    <main id="feedContainer">
+    </main>
+
+    <div class="algo-toast" id="algoToast">Watching preferences adjust recommendations in real-time.</div>
+
+    <div id="authModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="authTitle">Sign Up / Login</h2>
+                <span class="close-btn" onclick="closeModal('authModal')">&times;</span>
+            </div>
+            <div class="form-group">
+                <label for="authUsername">Username</label>
+                <input type="text" id="authUsername" placeholder="Enter any username">
+            </div>
+            <div class="form-group">
+                <label for="authPassword">Password</label>
+                <input type="password" id="authPassword" placeholder="Enter your password">
+            </div>
+            <button class="btn-primary" style="width: 100%;" onclick="handleAuth()">Enter Account</button>
+        </div>
+    </div>
+
+    <div id="uploadModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Upload Video</h2>
+                <span class="close-btn" onclick="closeModal('uploadModal')">&times;</span>
+            </div>
+            <form id="uploadForm" onsubmit="handleUpload(event)">
+                <div class="form-group">
+                    <label for="videoTitle">Title</label>
+                    <input type="text" id="videoTitle" required placeholder="Give your video a catchy title">
+                </div>
+                <div class="form-group">
+                    <label for="videoGenre">Genre</label>
+                    <select id="videoGenre" required>
+                        <option value="">Select a Genre</option>
+                        <option value="Comedy">Comedy</option>
+                        <option value="Tech">Tech & Coding</option>
+                        <option value="Music">Music & Dance</option>
+                        <option value="Gaming">Gaming</option>
+                        <option value="Cooking">Cooking & Food</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="videoFile">Video File (.mp4 only)</label>
+                    <input type="file" id="videoFile" accept="video/mp4" required>
+                    <p class="hint">Recommended aspects: 16:9 or 9:16. Max size: 10 GB.</p>
+                    <div id="uploadError" class="error-msg"></div>
+                </div>
+                <button type="submit" class="btn-primary" style="width: 100%;">Publish</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/script.js"></script>
+</body>
+</html>
