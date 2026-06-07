@@ -26,7 +26,7 @@ const users = new Map([
 ]); 
 
 const databaseVideos = [
-    { id: 1, title: 'Fortnite vs Roblox', genre: 'Gaming', url: 'http://localhost:5000/uploads/sample1.mp4' }
+    { id: 1, title: 'Fortnite vs Roblox', genre: 'Gaming', url: '/uploads/sample1.mp4' }
 ];
 const userPreferences = {};
 
@@ -111,11 +111,11 @@ app.post('/api/upload', upload.single('video'), (req, res) => {
             return res.status(400).json({ error: 'Missing metadata or video payload.' });
         }
         const newVideo = {
-            id: Date.now(),
-            title: title,
-            genre: genre,
-            url: `http://localhost:5000/uploads/${req.file.filename}`,
-            author: username.toLowerCase()
+           id: Date.now(),
+           title: title,
+           genre: genre,
+           url: `/uploads/${req.file.filename}`, // Changed from http://localhost:5000
+           author: username.toLowerCase()
         };
         databaseVideos.unshift(newVideo);
         res.status(201).json({ message: 'Video uploaded!', video: newVideo });
